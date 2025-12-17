@@ -1,4 +1,4 @@
-import { Moon, Sun, BookOpen } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 
@@ -9,15 +9,17 @@ const Header = () => {
     <header className="w-full border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 transition-theme">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <BookOpen className="h-6 w-6 text-primary" />
-          </div>
+          <img 
+            src="/Saveetha_Institute_of_Medical_And_Technical_Sciences_Logo.png" 
+            alt="SIMATS Logo" 
+            className="h-12 w-auto object-contain"
+          />
           <div>
             <h1 className="font-heading text-xl font-semibold text-foreground">
-              Research Paper Search
+            SIMATS Engineering College
             </h1>
             <p className="text-xs text-muted-foreground hidden sm:block">
-              Check paper availability
+              
             </p>
           </div>
         </div>
