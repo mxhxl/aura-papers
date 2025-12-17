@@ -1,4 +1,4 @@
-import { Moon, Sun, FileSpreadsheet } from 'lucide-react';
+import { Moon, Sun, BookOpen } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 
@@ -10,14 +10,14 @@ const Header = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
-            <FileSpreadsheet className="h-6 w-6 text-primary" />
+            <BookOpen className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="font-heading text-xl font-semibold text-foreground">
-              CSV Data Viewer
+              Research Paper Search
             </h1>
             <p className="text-xs text-muted-foreground hidden sm:block">
-              View large datasets with ease
+              Check paper availability
             </p>
           </div>
         </div>
