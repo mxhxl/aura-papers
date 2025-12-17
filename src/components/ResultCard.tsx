@@ -1,4 +1,4 @@
-import { AlertTriangle, Calendar, User, BookOpen, Building2, Globe, FileText, ExternalLink } from 'lucide-react';
+import { Calendar, User, BookOpen, Building2, Globe, FileText, ExternalLink } from 'lucide-react';
 import { RetractionPaper } from '@/pages/Index';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +44,6 @@ const ResultCard = ({ paper }: ResultCardProps) => {
               )}
             </div>
           </div>
-          <AlertTriangle className="h-6 w-6 text-warning flex-shrink-0" />
         </div>
       </CardHeader>
       
