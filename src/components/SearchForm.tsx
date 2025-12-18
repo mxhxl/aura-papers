@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Search, X } from 'lucide-react';
+import { useState, useEffect, useCallback, memo, useMemo } from 'react';
+import { Search, X, Filter, Calendar, FileText, User, Building2, Globe, BookOpen, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export interface SearchFilters {
   author?: string;
@@ -30,7 +32,85 @@ interface SearchFormProps {
   isLoading: boolean;
 }
 
-const SearchForm = ({ onSearch, isLoading }: SearchFormProps) => {
+// Quick filter presets
+const QUICK_FILTERS = [
+  { label: 'SIMATS Papers', filters: { institution: 'saveetha' } },
+  { label: 'Recent Retractions', filters: { retractionFromDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] } },
+  { label: 'India', filters: { country: 'India' } },
+];
+
+// Input field with icon component
+interface FieldInputProps {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  type?: string;
+}
+
+const FieldInput = memo(({ id, label, icon, placeholder, value, onChange, disabled, type = 'text' }: FieldInputProps) => (
+  <div className="space-y-1.5">
+    <Label htmlFor={id} className="text-xs md:text-sm font-medium flex items-center gap-2">
+      <span className="text-primary">{icon}</span>
+      {label}
+    </Label>
+    <Input
+      id={id}
+      type={type}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-9 md:h-10 text-sm md:text-base bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all"
+      disabled={disabled}
+    />
+  </div>
+));
+
+FieldInput.displayName = 'FieldInput';
+
+// Select field with icon component
+interface FieldSelectProps {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  placeholder: string;
+  value: string | undefined;
+  options: string[];
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+const FieldSelect = memo(({ id, label, icon, placeholder, value, options, onChange, disabled }: FieldSelectProps) => (
+  <div className="space-y-1.5">
+    <Label htmlFor={id} className="text-xs md:text-sm font-medium flex items-center gap-2">
+      <span className="text-primary">{icon}</span>
+      {label}
+    </Label>
+    <Select
+      value={value || undefined}
+      onValueChange={onChange}
+      disabled={disabled}
+    >
+      <SelectTrigger className="h-9 md:h-10 text-sm md:text-base bg-background/50 border-border/50 focus:border-primary/50">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent className="max-h-[300px] overflow-y-auto">
+        {options.map((option) => (
+          <SelectItem key={option} value={option} className="text-sm">
+            {option}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+));
+
+FieldSelect.displayName = 'FieldSelect';
+
+const SearchForm = memo(({ onSearch, isLoading }: SearchFormProps) => {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [options, setOptions] = useState<{
     articleTypes: string[];
@@ -43,6 +123,7 @@ const SearchForm = ({ onSearch, isLoading }: SearchFormProps) => {
     journals: [],
     publishers: []
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   
   // Cache options in localStorage
   const optionsCacheKey = 'retraction_options_cache';
@@ -95,17 +176,22 @@ const SearchForm = ({ onSearch, isLoading }: SearchFormProps) => {
     loadOptions();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     onSearch(filters);
-  };
+  }, [filters, onSearch]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setFilters({});
     onSearch({});
-  };
+  }, [onSearch]);
 
-  // Debounced filter updates for text inputs (not for selects/dates)
+  const handleQuickFilter = useCallback((quickFilter: { label: string; filters: Partial<SearchFilters> }) => {
+    const newFilters = { ...filters, ...quickFilter.filters };
+    setFilters(newFilters);
+    onSearch(newFilters);
+  }, [filters, onSearch]);
+
   const updateFilter = useCallback((key: keyof SearchFilters, value: string) => {
     setFilters(prev => ({
       ...prev,
@@ -113,322 +199,289 @@ const SearchForm = ({ onSearch, isLoading }: SearchFormProps) => {
     }));
   }, []);
 
-  // For text inputs, we don't need debouncing since search only happens on submit
-  // But we can optimize by not triggering re-renders unnecessarily
-  const handleTextInputChange = useCallback((key: keyof SearchFilters) => {
-    return (e: React.ChangeEvent<HTMLInputElement>) => {
-      updateFilter(key, e.target.value);
-    };
-  }, [updateFilter]);
+  // Count active filters
+  const activeFilterCount = useMemo(() => 
+    Object.values(filters).filter(v => v !== undefined && v !== '').length
+  , [filters]);
+
+  // Check if any advanced filters are active
+  const hasAdvancedFilters = useMemo(() => 
+    !!(filters.originalPaperFromDate || filters.originalPaperToDate || 
+       filters.originalPaperPubMedID || filters.originalPaperDOI ||
+       filters.retractionFromDate || filters.retractionToDate ||
+       filters.retractionPubMedID || filters.retractionDOI)
+  , [filters]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        {/* Left Column - Search Criteria */}
-        <div className="space-y-3 md:space-y-4">
-          <h3 className="text-base md:text-lg font-semibold text-foreground mb-3 md:mb-4">Search Criteria</h3>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Quick Filters */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5" />
+          Quick filters
+        </span>
+        {QUICK_FILTERS.map((qf) => (
+          <Button
+            key={qf.label}
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleQuickFilter(qf)}
+            disabled={isLoading}
+            className="h-7 text-xs rounded-full hover:bg-primary/10 hover:border-primary/50 hover:text-primary transition-all"
+          >
+            {qf.label}
+          </Button>
+        ))}
+        {activeFilterCount > 0 && (
+          <Badge variant="secondary" className="text-xs rounded-full">
+            {activeFilterCount} active
+          </Badge>
+        )}
+      </div>
+
+      <Separator className="bg-border/50" />
+
+      {/* Main Search Fields */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Primary Search Fields */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Filter className="h-4 w-4 text-primary" />
+            Primary Filters
+          </h3>
           
-          <div className="space-y-1.5 md:space-y-2">
-            <Label htmlFor="author" className="text-xs md:text-sm font-medium">
-              Author(s):
-            </Label>
-            <Input
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FieldInput
               id="author"
-              type="text"
-              placeholder="Type to search"
+              label="Author(s)"
+              icon={<User className="h-3.5 w-3.5" />}
+              placeholder="Search by name..."
               value={filters.author || ''}
-              onChange={handleTextInputChange('author')}
-              className="h-9 md:h-10 text-sm md:text-base"
+              onChange={(v) => updateFilter('author', v)}
               disabled={isLoading}
             />
-          </div>
 
-          <div className="space-y-1.5 md:space-y-2">
-            <Label htmlFor="title" className="text-xs md:text-sm font-medium">
-              Title:
-            </Label>
-            <Input
+            <FieldInput
               id="title"
-              type="text"
-              placeholder="Type to search"
+              label="Title"
+              icon={<FileText className="h-3.5 w-3.5" />}
+              placeholder="Search by title..."
               value={filters.title || ''}
-              onChange={handleTextInputChange('title')}
-              className="h-9 md:h-10 text-sm md:text-base"
+              onChange={(v) => updateFilter('title', v)}
               disabled={isLoading}
             />
           </div>
 
-          <div className="space-y-1.5 md:space-y-2">
-            <Label htmlFor="articleType" className="text-xs md:text-sm font-medium">
-              Article Type(s):
-            </Label>
-            <Select
-              value={filters.articleType || undefined}
-              onValueChange={(value) => updateFilter('articleType', value)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FieldSelect
+              id="articleType"
+              label="Article Type"
+              icon={<FileText className="h-3.5 w-3.5" />}
+              placeholder="Select type"
+              value={filters.articleType}
+              options={options.articleTypes}
+              onChange={(v) => updateFilter('articleType', v)}
               disabled={isLoading}
-            >
-              <SelectTrigger className="h-9 md:h-10 text-sm md:text-base">
-                <SelectValue placeholder="Select article type" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px] overflow-y-auto">
-                {options.articleTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            />
 
-          <div className="space-y-1.5 md:space-y-2">
-            <Label htmlFor="country" className="text-xs md:text-sm font-medium">
-              Country(s):
-            </Label>
-            <Select
-              value={filters.country || undefined}
-              onValueChange={(value) => updateFilter('country', value)}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="h-9 md:h-10 text-sm md:text-base">
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px] overflow-y-auto">
-                {options.countries.map((country) => (
-                  <SelectItem key={country} value={country}>
-                    {country}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5 md:space-y-2">
-            <Label htmlFor="journal" className="text-xs md:text-sm font-medium">
-              Journal:
-            </Label>
-            <Select
-              value={filters.journal || undefined}
-              onValueChange={(value) => updateFilter('journal', value)}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="h-9 md:h-10 text-sm md:text-base">
-                <SelectValue placeholder="Select journal" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px] overflow-y-auto">
-                {options.journals.map((journal) => (
-                  <SelectItem key={journal} value={journal}>
-                    {journal}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5 md:space-y-2">
-            <Label htmlFor="publisher" className="text-xs md:text-sm font-medium">
-              Publisher:
-            </Label>
-            <Select
-              value={filters.publisher || undefined}
-              onValueChange={(value) => updateFilter('publisher', value)}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="h-9 md:h-10 text-sm md:text-base">
-                <SelectValue placeholder="Select publisher" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px] overflow-y-auto">
-                {options.publishers.map((publisher) => (
-                  <SelectItem key={publisher} value={publisher}>
-                    {publisher}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5 md:space-y-2">
-            <Label htmlFor="affiliation" className="text-xs md:text-sm font-medium">
-              Affiliation(s):
-            </Label>
-            <Input
-              id="affiliation"
-              type="text"
-              placeholder="Type to search"
-              value={filters.affiliation || ''}
-              onChange={handleTextInputChange('affiliation')}
-              className="h-9 md:h-10 text-sm md:text-base"
+            <FieldSelect
+              id="country"
+              label="Country"
+              icon={<Globe className="h-3.5 w-3.5" />}
+              placeholder="Select country"
+              value={filters.country}
+              options={options.countries}
+              onChange={(v) => updateFilter('country', v)}
               disabled={isLoading}
             />
           </div>
 
-          <div className="space-y-1.5 md:space-y-2">
-            <Label htmlFor="institution" className="text-xs md:text-sm font-medium">
-              Institution:
-            </Label>
-            <Input
-              id="institution"
-              type="text"
-              placeholder="Type to search"
-              value={filters.institution || ''}
-              onChange={handleTextInputChange('institution')}
-              className="h-9 md:h-10 text-sm md:text-base"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FieldSelect
+              id="journal"
+              label="Journal"
+              icon={<BookOpen className="h-3.5 w-3.5" />}
+              placeholder="Select journal"
+              value={filters.journal}
+              options={options.journals}
+              onChange={(v) => updateFilter('journal', v)}
+              disabled={isLoading}
+            />
+
+            <FieldSelect
+              id="publisher"
+              label="Publisher"
+              icon={<Building2 className="h-3.5 w-3.5" />}
+              placeholder="Select publisher"
+              value={filters.publisher}
+              options={options.publishers}
+              onChange={(v) => updateFilter('publisher', v)}
               disabled={isLoading}
             />
           </div>
 
-          <div className="pt-2">
-            <Button
-              type="button"
-              variant="link"
-              onClick={handleClear}
-              className="p-0 h-auto text-primary underline"
-              disabled={isLoading}
-            >
-              Clear Search
-            </Button>
-          </div>
+          <FieldInput
+            id="institution"
+            label="Institution"
+            icon={<Building2 className="h-3.5 w-3.5" />}
+            placeholder="Search institution..."
+            value={filters.institution || ''}
+            onChange={(v) => updateFilter('institution', v)}
+            disabled={isLoading}
+          />
         </div>
 
-        {/* Right Column - Date and Identifier Filters */}
-        <div className="space-y-4 md:space-y-6">
-          {/* Original Paper Section */}
-          <div className="space-y-3 md:space-y-4">
-            <h3 className="text-base md:text-lg font-semibold text-foreground">Original Paper</h3>
+        {/* Date & ID Filters (Collapsible) */}
+        <div className="space-y-4">
+          <Collapsible open={showAdvanced || hasAdvancedFilters} onOpenChange={setShowAdvanced}>
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full justify-between h-auto py-2 px-3 hover:bg-muted/50"
+              >
+                <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Advanced Filters
+                  {hasAdvancedFilters && (
+                    <Badge variant="secondary" className="text-[10px] ml-2">Active</Badge>
+                  )}
+                </span>
+                {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              <div className="space-y-1.5 md:space-y-2">
-                <Label htmlFor="originalFromDate" className="text-xs md:text-sm font-medium">
-                  From Date:
-                </Label>
-                <Input
-                  id="originalFromDate"
-                  type="date"
-                  value={filters.originalPaperFromDate || ''}
-                  onChange={(e) => updateFilter('originalPaperFromDate', e.target.value)}
-                  className="h-9 md:h-10 text-sm md:text-base"
-                  disabled={isLoading}
-                />
+            <CollapsibleContent className="space-y-4 pt-4">
+              {/* Original Paper Section */}
+              <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/20 space-y-3">
+                <h4 className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Original Paper
+                </h4>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <FieldInput
+                    id="originalFromDate"
+                    label="From Date"
+                    icon={<Calendar className="h-3.5 w-3.5" />}
+                    placeholder=""
+                    value={filters.originalPaperFromDate || ''}
+                    onChange={(v) => updateFilter('originalPaperFromDate', v)}
+                    disabled={isLoading}
+                    type="date"
+                  />
+
+                  <FieldInput
+                    id="originalToDate"
+                    label="To Date"
+                    icon={<Calendar className="h-3.5 w-3.5" />}
+                    placeholder=""
+                    value={filters.originalPaperToDate || ''}
+                    onChange={(v) => updateFilter('originalPaperToDate', v)}
+                    disabled={isLoading}
+                    type="date"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FieldInput
+                    id="originalPubMedID"
+                    label="PubMed ID"
+                    icon={<FileText className="h-3.5 w-3.5" />}
+                    placeholder="e.g., 12345678"
+                    value={filters.originalPaperPubMedID || ''}
+                    onChange={(v) => updateFilter('originalPaperPubMedID', v)}
+                    disabled={isLoading}
+                  />
+
+                  <FieldInput
+                    id="originalDOI"
+                    label="DOI"
+                    icon={<FileText className="h-3.5 w-3.5" />}
+                    placeholder="e.g., 10.1234/..."
+                    value={filters.originalPaperDOI || ''}
+                    onChange={(v) => updateFilter('originalPaperDOI', v)}
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1.5 md:space-y-2">
-                <Label htmlFor="originalToDate" className="text-xs md:text-sm font-medium">
-                  To:
-                </Label>
-                <Input
-                  id="originalToDate"
-                  type="date"
-                  value={filters.originalPaperToDate || ''}
-                  onChange={(e) => updateFilter('originalPaperToDate', e.target.value)}
-                  className="h-9 md:h-10 text-sm md:text-base"
-                  placeholder="mm/dd/yyyy"
-                  disabled={isLoading}
-                />
+              {/* Retraction Notice Section */}
+              <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20 space-y-3">
+                <h4 className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wide flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  Retraction Notice
+                </h4>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <FieldInput
+                    id="retractionFromDate"
+                    label="From Date"
+                    icon={<Calendar className="h-3.5 w-3.5" />}
+                    placeholder=""
+                    value={filters.retractionFromDate || ''}
+                    onChange={(v) => updateFilter('retractionFromDate', v)}
+                    disabled={isLoading}
+                    type="date"
+                  />
+
+                  <FieldInput
+                    id="retractionToDate"
+                    label="To Date"
+                    icon={<Calendar className="h-3.5 w-3.5" />}
+                    placeholder=""
+                    value={filters.retractionToDate || ''}
+                    onChange={(v) => updateFilter('retractionToDate', v)}
+                    disabled={isLoading}
+                    type="date"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FieldInput
+                    id="retractionPubMedID"
+                    label="PubMed ID"
+                    icon={<FileText className="h-3.5 w-3.5" />}
+                    placeholder="e.g., 12345678"
+                    value={filters.retractionPubMedID || ''}
+                    onChange={(v) => updateFilter('retractionPubMedID', v)}
+                    disabled={isLoading}
+                  />
+
+                  <FieldInput
+                    id="retractionDOI"
+                    label="DOI"
+                    icon={<FileText className="h-3.5 w-3.5" />}
+                    placeholder="e.g., 10.1234/..."
+                    value={filters.retractionDOI || ''}
+                    onChange={(v) => updateFilter('retractionDOI', v)}
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
-            </div>
-
-            <div className="space-y-1.5 md:space-y-2">
-              <Label htmlFor="originalPubMedID" className="text-xs md:text-sm font-medium">
-                PubMedID:
-              </Label>
-              <Input
-                id="originalPubMedID"
-                type="text"
-                value={filters.originalPaperPubMedID || ''}
-                onChange={(e) => updateFilter('originalPaperPubMedID', e.target.value)}
-                className="h-9 md:h-10 text-sm md:text-base"
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-1.5 md:space-y-2">
-              <Label htmlFor="originalDOI" className="text-xs md:text-sm font-medium">
-                DOI:
-              </Label>
-              <Input
-                id="originalDOI"
-                type="text"
-                value={filters.originalPaperDOI || ''}
-                onChange={(e) => updateFilter('originalPaperDOI', e.target.value)}
-                className="h-9 md:h-10 text-sm md:text-base"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Retraction or Other Notices Section */}
-          <div className="space-y-3 md:space-y-4">
-            <h3 className="text-base md:text-lg font-semibold text-foreground">Retraction or Other Notices</h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              <div className="space-y-1.5 md:space-y-2">
-                <Label htmlFor="retractionFromDate" className="text-xs md:text-sm font-medium">
-                  From Date:
-                </Label>
-                <Input
-                  id="retractionFromDate"
-                  type="date"
-                  value={filters.retractionFromDate || ''}
-                  onChange={(e) => updateFilter('retractionFromDate', e.target.value)}
-                  className="h-9 md:h-10 text-sm md:text-base"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-1.5 md:space-y-2">
-                <Label htmlFor="retractionToDate" className="text-xs md:text-sm font-medium">
-                  To:
-                </Label>
-                <Input
-                  id="retractionToDate"
-                  type="date"
-                  value={filters.retractionToDate || ''}
-                  onChange={(e) => updateFilter('retractionToDate', e.target.value)}
-                  className="h-9 md:h-10 text-sm md:text-base"
-                  placeholder="mm/dd/yyyy"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5 md:space-y-2">
-              <Label htmlFor="retractionPubMedID" className="text-xs md:text-sm font-medium">
-                PubMedID:
-              </Label>
-              <Input
-                id="retractionPubMedID"
-                type="text"
-                value={filters.retractionPubMedID || ''}
-                onChange={(e) => updateFilter('retractionPubMedID', e.target.value)}
-                className="h-9 md:h-10 text-sm md:text-base"
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-1.5 md:space-y-2">
-              <Label htmlFor="retractionDOI" className="text-xs md:text-sm font-medium">
-                DOI:
-              </Label>
-              <Input
-                id="retractionDOI"
-                type="text"
-                value={filters.retractionDOI || ''}
-                onChange={(e) => updateFilter('retractionDOI', e.target.value)}
-                className="h-9 md:h-10 text-sm md:text-base"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </div>
 
-      {/* Search Button */}
-      <div className="flex justify-end pt-2 md:pt-4">
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between pt-2 gap-4">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={handleClear}
+          disabled={isLoading || activeFilterCount === 0}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-4 w-4 mr-2" />
+          Clear all
+        </Button>
+        
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full sm:w-auto h-11 md:h-12 px-6 md:px-8 bg-teal-600 hover:bg-teal-700 text-white font-medium"
+          className="h-11 px-8 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-medium shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 transition-all"
         >
           {isLoading ? (
             <span className="flex items-center gap-2">
@@ -438,13 +491,15 @@ const SearchForm = ({ onSearch, isLoading }: SearchFormProps) => {
           ) : (
             <span className="flex items-center gap-2">
               <Search className="h-4 w-4" />
-              Search
+              Search Papers
             </span>
           )}
         </Button>
       </div>
     </form>
   );
-};
+});
+
+SearchForm.displayName = 'SearchForm';
 
 export default SearchForm;
