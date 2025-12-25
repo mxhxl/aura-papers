@@ -9,7 +9,7 @@ module.exports = {
     max_memory_restart: '1G',
     env: {
       NODE_ENV: 'production',
-      PORT: 3000
+      PORT: 4000
     },
     error_file: '/var/log/pm2/aura-papers-error.log',
     out_file: '/var/log/pm2/aura-papers-out.log',
