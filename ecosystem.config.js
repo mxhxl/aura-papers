@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'aura-papers-api',
-    cwd: '/var/www/aura-papers/server',
+    cwd: '/var/www/aura-papers/aura-papers/server',
     script: 'server.js',
     instances: 1,
     autorestart: true,
