@@ -147,7 +147,7 @@ const SearchForm = memo(({ onSearch, isLoading }: SearchFormProps) => {
         }
 
         // Fetch fresh data
-        const response = await fetch('http://localhost:3000/api/options');
+        const response = await fetch('/api/options');
         if (!response.ok) throw new Error('Failed to fetch options');
         const data = await response.json();
         

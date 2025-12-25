@@ -93,7 +93,7 @@ const Index = () => {
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       
       try {
-        const response = await fetch('http://localhost:3000/api/health', {
+        const response = await fetch('/api/health', {
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -129,7 +129,7 @@ const Index = () => {
     setShowResults(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/search', {
+      const response = await fetch('/api/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -179,7 +179,7 @@ const Index = () => {
     
     try {
       if (hasFilters) {
-        const response = await fetch('http://localhost:3000/api/search', {
+        const response = await fetch('/api/search', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -205,7 +205,7 @@ const Index = () => {
           totalPages: data.totalPages || Math.ceil(data.count / limit)
         };
       } else {
-        const response = await fetch(`http://localhost:3000/api/papers?page=${page}&limit=${limit}`, {
+        const response = await fetch(`/api/papers?page=${page}&limit=${limit}`, {
           signal
         });
         
