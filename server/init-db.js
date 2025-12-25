@@ -9,9 +9,9 @@ const __dirname = path.dirname(__filename);
 
 // Find CSV file
 const possiblePaths = [
-  path.join(__dirname, '../aura-papers/public/retraction_watch.csv'),
-  path.join(process.cwd(), 'aura-papers/public/retraction_watch.csv'),
-  path.resolve(__dirname, '../aura-papers/public/retraction_watch.csv'),
+  path.join(__dirname, '../public/retraction_watch.csv'),
+  path.join(process.cwd(), 'public/retraction_watch.csv'),
+  path.resolve(__dirname, '../public/retraction_watch.csv'),
 ];
 
 let csvPath = null;
