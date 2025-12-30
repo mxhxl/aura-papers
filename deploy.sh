@@ -16,7 +16,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-APP_DIR="/var/www/aura-papers/aura-papers"
+APP_DIR="/var/www/pdd/aura-papers"
 SERVER_DIR="$APP_DIR/server"
 NGINX_CONFIG="/etc/nginx/sites-available/aura-papers"
 PM2_APP_NAME="aura-papers-api"
