@@ -60,65 +60,30 @@ else
 fi
 
 echo -e "${YELLOW}Step 6: Setting up PM2...${NC}"
-# Check if app is already running
-if pm2 list | grep -q "$PM2_APP_NAME"; then
-    echo -e "${YELLOW}Restarting existing PM2 process...${NC}"
-    pm2 restart "$PM2_APP_NAME"
-else
-    echo -e "${YELLOW}Starting new PM2 process...${NC}"
-    cd "$SERVER_DIR"
-    pm2 start server.js --name "$PM2_APP_NAME"
+cd "$SERVER_DIR"
+
+# Stop any existing process on port 5000
+if lsof -ti:5000 >/dev/null 2>&1; then
+    echo -e "${YELLOW}Stopping existing process on port 5000...${NC}"
+    pm2 delete "$PM2_APP_NAME" 2>/dev/null || true
+    sleep 2
 fi
 
+# Start the application
+echo -e "${YELLOW}Starting PM2 process...${NC}"
+pm2 start server.js --name "$PM2_APP_NAME"
 pm2 save
 echo -e "${GREEN}PM2 configured successfully!${NC}"
 
 echo -e "${YELLOW}Step 7: Configuring nginx...${NC}"
-# Copy nginx config if it exists in the app directory
+# Always use the nginx config from the repository
 if [ -f "$APP_DIR/nginx-config.conf" ]; then
-    cp "$APP_DIR/nginx-config.conf" "$NGINX_CONFIG"
-    echo -e "${GREEN}Nginx config copied.${NC}"
+    echo -e "${YELLOW}Copying nginx config from repository...${NC}"
+    sudo cp "$APP_DIR/nginx-config.conf" "$NGINX_CONFIG"
+    echo -e "${GREEN}Nginx config copied from $APP_DIR/nginx-config.conf${NC}"
 else
-    echo -e "${YELLOW}Creating nginx config...${NC}"
-    cat > "$NGINX_CONFIG" <<'EOF'
-server {
-    listen 8082;
-    server_name 82.112.238.195;
-
-    client_max_body_size 100M;
-
-    location / {
-        root /var/www/pdd/aura-papers/dist;
-        try_files $uri $uri/ /index.html;
-
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-        }
-    }
-
-    location /api {
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-
-        proxy_connect_timeout 600s;
-        proxy_send_timeout 600s;
-        proxy_read_timeout 600s;
-    }
-
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
-}
-EOF
+    echo -e "${RED}Error: nginx-config.conf not found in $APP_DIR${NC}"
+    exit 1
 fi
 
 # Enable site
@@ -127,21 +92,18 @@ if [ ! -L "/etc/nginx/sites-enabled/aura-papers" ]; then
     echo -e "${GREEN}Nginx site enabled.${NC}"
 fi
 
-# Remove default site if it exists
-if [ -L "/etc/nginx/sites-enabled/default" ]; then
-    rm /etc/nginx/sites-enabled/default
-    echo -e "${GREEN}Default site removed.${NC}"
-fi
-
-# Test nginx config
+# Test nginx config before restarting (this ensures we don't break existing sites)
 echo -e "${YELLOW}Testing nginx configuration...${NC}"
 if nginx -t; then
     echo -e "${GREEN}Nginx configuration is valid!${NC}"
-    systemctl restart nginx
+    echo -e "${YELLOW}Reloading nginx (this preserves existing connections)...${NC}"
+    systemctl reload nginx
     systemctl enable nginx
-    echo -e "${GREEN}Nginx restarted successfully!${NC}"
+    echo -e "${GREEN}Nginx reloaded successfully!${NC}"
 else
     echo -e "${RED}Nginx configuration test failed!${NC}"
+    echo -e "${RED}Rolling back changes to prevent breaking existing sites...${NC}"
+    rm -f "/etc/nginx/sites-enabled/aura-papers"
     exit 1
 fi
 
