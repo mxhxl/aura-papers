@@ -82,8 +82,8 @@ else
     echo -e "${YELLOW}Creating nginx config...${NC}"
     cat > "$NGINX_CONFIG" <<'EOF'
 server {
-    listen 80;
-    server_name 172.105.252.86;
+    listen 8082;
+    server_name 82.112.238.195;
 
     client_max_body_size 100M;
 
@@ -154,10 +154,10 @@ echo -e "${GREEN}Deployment Complete!${NC}"
 echo -e "${GREEN}=========================================${NC}"
 echo ""
 echo -e "Your application is now running at:"
-echo -e "  ${GREEN}http://172.105.252.86${NC}"
+echo -e "  ${GREEN}http://82.112.238.195:8082${NC}"
 echo ""
 echo -e "API Health Check:"
-echo -e "  ${GREEN}http://172.105.252.86/api/health${NC}"
+echo -e "  ${GREEN}http://82.112.238.195:8082/api/health${NC}"
 echo ""
 echo -e "Useful commands:"
 echo -e "  PM2 status:  ${YELLOW}pm2 status${NC}"
