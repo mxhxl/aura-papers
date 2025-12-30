@@ -88,7 +88,7 @@ server {
     client_max_body_size 100M;
 
     location / {
-        root /var/www/aura-papers/aura-papers/dist;
+        root /var/www/pdd/aura-papers/dist;
         try_files $uri $uri/ /index.html;
 
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
