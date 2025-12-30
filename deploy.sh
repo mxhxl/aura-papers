@@ -62,16 +62,15 @@ fi
 echo -e "${YELLOW}Step 6: Setting up PM2...${NC}"
 cd "$SERVER_DIR"
 
-# Stop any existing process on port 5000
-if lsof -ti:5000 >/dev/null 2>&1; then
-    echo -e "${YELLOW}Stopping existing process on port 5000...${NC}"
-    pm2 delete "$PM2_APP_NAME" 2>/dev/null || true
-    sleep 2
+# Check if app is already running with this specific name
+if pm2 list | grep -q "$PM2_APP_NAME"; then
+    echo -e "${YELLOW}Restarting existing PM2 process: $PM2_APP_NAME...${NC}"
+    pm2 restart "$PM2_APP_NAME"
+else
+    echo -e "${YELLOW}Starting new PM2 process: $PM2_APP_NAME...${NC}"
+    pm2 start server.js --name "$PM2_APP_NAME"
 fi
 
-# Start the application
-echo -e "${YELLOW}Starting PM2 process...${NC}"
-pm2 start server.js --name "$PM2_APP_NAME"
 pm2 save
 echo -e "${GREEN}PM2 configured successfully!${NC}"
 
