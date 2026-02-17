@@ -1,20 +1,14 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine
 
-RUN apk add --no-cache python3 make g++
-
 WORKDIR /app
 
-COPY package*.json ./
+COPY server/package*.json ./
 
-RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline --no-audit --legacy-peer-deps
+RUN npm ci --prefer-offline --no-audit --omit=dev
 
-COPY . .
-
-RUN npm run init-db || true
+COPY server/ .
 
 EXPOSE 5002
 
-ENV PORT=5002
-
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
