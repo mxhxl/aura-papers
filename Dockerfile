@@ -23,7 +23,7 @@ FROM nginx:1.25-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 RUN echo 'server { \
-    listen 8080; \
+    listen 80; \
     server_name _; \
     root /usr/share/nginx/html; \
     index index.html; \
@@ -43,6 +43,6 @@ RUN echo 'server { \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

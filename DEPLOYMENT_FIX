@@ -1,0 +1,15 @@
+This is NOT a Dockerfile or docker-compose.yml issue. The error occurs during repository setup BEFORE the Docker build starts. The deployment agent needs to clean up the stale git lock file. Add this to your deployment_agent.py in the _setup_repository method before git clone:
+
+import shutil
+from pathlib import Path
+
+# Clean up stale git lock files
+repo_dir = Path(f'/tmp/recursai-deployments/{app_name}')
+if repo_dir.exists():
+    lock_file = repo_dir / '.git' / 'shallow.lock'
+    if lock_file.exists():
+        lock_file.unlink()
+    # Or safer: remove entire directory and start fresh
+    shutil.rmtree(repo_dir)
+
+Then proceed with git clone.

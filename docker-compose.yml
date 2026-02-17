@@ -9,7 +9,7 @@ services:
     networks:
     - app-network
     environment:
-      PORT: ${PORT}
+      PORT: ${PORT:-5002}
   frontend:
     build:
       context: .
@@ -20,7 +20,7 @@ services:
     networks:
     - app-network
     environment:
-      VITE_API_URL: ${VITE_API_URL}
+      VITE_API_URL: ${VITE_API_URL:-/api}
     depends_on:
       backend:
         condition: service_started
