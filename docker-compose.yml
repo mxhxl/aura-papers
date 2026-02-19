@@ -5,35 +5,27 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "5002:5002"
+    - 5002:5002
     networks:
-      - app-network
+    - app-network
     environment:
-      PORT: ${PORT:-5002}
-      NODE_ENV: ${NODE_ENV:-production}
-    volumes:
-      - backend-data:/app/data
-
+      PORT: ${PORT}
+      NODE_ENV: ${NODE_ENV}
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-/api}
-        NODE_ENV: ${NODE_ENV:-production}
     restart: unless-stopped
     ports:
-      - "8084:80"
+    - 8084:80
     networks:
-      - app-network
+    - app-network
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+      NODE_ENV: ${NODE_ENV}
     depends_on:
       backend:
         condition: service_started
-
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  backend-data:
-    driver: local
