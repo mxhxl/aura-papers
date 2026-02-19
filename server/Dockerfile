@@ -13,8 +13,8 @@ COPY . .
 
 RUN node init-db.js || true
 
-EXPOSE 5004
-
 ENV NODE_ENV=production
+
+EXPOSE 5003
 
 CMD ["node", "server.js"]
