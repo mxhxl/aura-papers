@@ -13,12 +13,15 @@ ENV CI=false
 
 COPY package*.json ./
 
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit --legacy-peer-deps
+# Install dependencies with legacy peer deps and verify vite installation
+RUN npm ci --prefer-offline --no-audit --legacy-peer-deps && \
+    npm list vite || echo "Vite not found in dependencies" && \
+    ls -la node_modules/.bin/ || echo "No .bin directory"
 
 COPY . .
 
-RUN npm run build
+# Build using npx to ensure vite is found
+RUN npx vite build
 
 RUN find dist -type f -name '*.js' -exec sed -i 's|http://localhost:5002/api|/api|g' {} + || true
 
