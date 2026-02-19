@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine
 
-WORKDIR /app
-
 RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
 
 COPY package*.json ./
 
@@ -15,6 +15,6 @@ RUN node init-db.js || true
 
 ENV NODE_ENV=production
 
-EXPOSE 5003
+EXPOSE 5002
 
 CMD ["node", "server.js"]
