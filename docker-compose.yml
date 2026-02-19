@@ -11,6 +11,8 @@ services:
     environment:
       PORT: ${PORT:-5002}
       NODE_ENV: ${NODE_ENV:-production}
+    volumes:
+      - backend-data:/app/data
 
   frontend:
     build:
@@ -31,3 +33,7 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  backend-data:
+    driver: local
