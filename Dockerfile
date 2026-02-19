@@ -20,8 +20,6 @@ COPY . .
 
 RUN npm run build
 
-RUN find dist -type f -name '*.js' -exec sed -i 's|http://localhost:5004/api|/api|g' {} +
-
 FROM nginx:1.25-alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html

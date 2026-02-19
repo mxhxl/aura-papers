@@ -9,20 +9,20 @@ services:
     networks:
     - app-network
     environment:
-      PORT: ${PORT}
-      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT:-5003}
+      NODE_ENV: ${NODE_ENV:-production}
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        NODE_ENV: ${NODE_ENV:-production}
     restart: unless-stopped
     ports:
     - 8084:80
     networks:
     - app-network
-    environment:
-      VITE_API_URL: ${VITE_API_URL}
-      NODE_ENV: ${NODE_ENV}
     depends_on:
       backend:
         condition: service_started
