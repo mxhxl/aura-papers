@@ -15,14 +15,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
     restart: unless-stopped
     ports:
     - 8084:80
     networks:
     - app-network
-    environment:
-      VITE_API_URL: ${VITE_API_URL}
-      NODE_ENV: ${NODE_ENV}
     depends_on:
       backend:
         condition: service_started

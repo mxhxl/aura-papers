@@ -4,24 +4,23 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 ARG VITE_API_URL=/api
-ARG NODE_ENV=production
 
 ENV NODE_OPTIONS=--max-old-space-size=4096
 ENV VITE_API_URL=${VITE_API_URL}
-ENV NODE_ENV=${NODE_ENV}
 ENV CI=false
+
+# Do NOT set NODE_ENV=production during build - it prevents devDependencies install
+# which includes vite, typescript, and other build tools
 
 COPY package*.json ./
 
-# Install dependencies with legacy peer deps and verify vite installation
-RUN npm ci --prefer-offline --no-audit --legacy-peer-deps && \
-    npm list vite || echo "Vite not found in dependencies" && \
-    ls -la node_modules/.bin/ || echo "No .bin directory"
+# Install ALL dependencies including devDependencies (needed for vite build)
+RUN npm ci --prefer-offline --no-audit --legacy-peer-deps
 
 COPY . .
 
-# Build using npx to ensure vite is found
-RUN npx vite build
+# Now build with vite (which is installed in devDependencies)
+RUN npm run build
 
 RUN find dist -type f -name '*.js' -exec sed -i 's|http://localhost:5002/api|/api|g' {} + || true
 
