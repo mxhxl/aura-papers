@@ -3,12 +3,18 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY server/package*.json ./
+RUN apk add --no-cache python3 make g++
 
-RUN npm ci --prefer-offline --no-audit --omit=dev
+COPY package*.json ./
 
-COPY server/ .
+RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline --no-audit
 
-EXPOSE 5002
+COPY . .
+
+RUN node init-db.js || true
+
+EXPOSE 5004
+
+ENV NODE_ENV=production
 
 CMD ["node", "server.js"]

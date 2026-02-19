@@ -1,15 +1,16 @@
 services:
   backend:
     build:
-      context: .
-      dockerfile: server/Dockerfile
+      context: ./server
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-    - 5002:5002
+    - 5004:5004
     networks:
     - app-network
     environment:
-      PORT: ${PORT:-5002}
+      PORT: ${PORT}
+      NODE_ENV: ${NODE_ENV}
   frontend:
     build:
       context: .
@@ -20,7 +21,8 @@ services:
     networks:
     - app-network
     environment:
-      VITE_API_URL: ${VITE_API_URL:-/api}
+      VITE_API_URL: ${VITE_API_URL}
+      NODE_ENV: ${NODE_ENV}
     depends_on:
       backend:
         condition: service_started
