@@ -11,6 +11,9 @@ services:
     environment:
       PORT: ${PORT}
       NODE_ENV: ${NODE_ENV}
+    volumes:
+      # Mount the CSV file if it exists in the parent directory
+      - ./public/retraction_watch.csv:/app/public/retraction_watch.csv:ro
   frontend:
     build:
       context: .
