@@ -5,31 +5,26 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - 5004:5004
+    - 5004:5004
     networks:
-      - app-network
+    - app-network
     environment:
-      PORT: ${PORT:-5004}
-      NODE_ENV: ${NODE_ENV:-production}
-    # Uncomment and adjust the volumes section if CSV file needs to be mounted:
-    # volumes:
-    #   - ./retraction_watch.csv:/app/public/retraction_watch.csv:ro
-
+      PORT: ${PORT}
+      NODE_ENV: ${NODE_ENV}
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - 8084:80
+    - 8085:80
     networks:
-      - app-network
+    - app-network
     environment:
-      VITE_API_URL: ${VITE_API_URL:-/api}
+      VITE_API_URL: ${VITE_API_URL}
     depends_on:
       backend:
         condition: service_started
-
 networks:
   app-network:
     driver: bridge
