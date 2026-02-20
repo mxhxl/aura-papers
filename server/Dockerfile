@@ -1,27 +1,22 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine
 
+RUN apk add --no-cache python3 make g++
+
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --prefer-offline --no-audit --omit=dev
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit
 
-# Copy application code
 COPY . .
 
-# Create public directory if it doesn't exist and ensure CSV is copied
-RUN mkdir -p /app/public /public
+RUN if [ -f "init-db.js" ]; then node init-db.js; fi && \
+    if [ -f "migrate-db.js" ]; then node migrate-db.js; fi
 
-# Copy CSV file to both locations the app checks
-COPY public/retraction_watch.csv /app/public/retraction_watch.csv 2>/dev/null || \
-     COPY retraction_watch.csv /app/public/retraction_watch.csv 2>/dev/null || \
-     echo "Warning: retraction_watch.csv not found in build context"
-
-RUN cp /app/public/retraction_watch.csv /public/retraction_watch.csv 2>/dev/null || true
+ENV NODE_ENV=production
 
 EXPOSE 5004
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "node init-db.js && node server.js"]
