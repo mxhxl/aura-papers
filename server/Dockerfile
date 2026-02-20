@@ -1,20 +1,25 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine
 
-RUN apk add --no-cache python3 make g++
-
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
 
-RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline --no-audit
+# Install dependencies
+RUN npm ci --prefer-offline --no-audit --legacy-peer-deps
 
+# Copy application code
 COPY . .
 
-ENV NODE_ENV=production
+# Copy the CSV data file from parent directory's public folder
+COPY ../public/retraction_watch.csv /app/public/retraction_watch.csv
 
-RUN npm run init-db || true
+# Initialize database before starting server
+RUN npm run init-db
 
+# Expose port
 EXPOSE 5004
 
-CMD ["sh", "-c", "npm run init-db && npm start"]
+# Start the server
+CMD ["npm", "start"]
