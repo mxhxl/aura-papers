@@ -13,6 +13,7 @@ services:
       NODE_ENV: ${NODE_ENV}
     volumes:
     - ./public/retraction_watch.csv:/app/public/retraction_watch.csv:ro
+    - backend-data:/app
   frontend:
     build:
       context: .
@@ -30,3 +31,5 @@ services:
 networks:
   app-network:
     driver: bridge
+volumes:
+  backend-data:
