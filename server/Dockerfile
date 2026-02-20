@@ -1,18 +1,20 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine
 
+RUN apk add --no-cache python3 make g++
+
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --prefer-offline --no-audit --legacy-peer-deps
+RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline --no-audit
 
 COPY . .
 
-COPY ../public/retraction_watch.csv /app/public/retraction_watch.csv || true
+RUN node init-db.js
 
-RUN npm run init-db || echo "Database initialization skipped"
+ENV NODE_ENV=production
 
 EXPOSE 5004
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "node init-db.js && node server.js"]

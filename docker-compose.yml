@@ -11,6 +11,8 @@ services:
     environment:
       PORT: ${PORT}
       NODE_ENV: ${NODE_ENV}
+    volumes:
+    - ./public/retraction_watch.csv:/app/public/retraction_watch.csv:ro
   frontend:
     build:
       context: .
