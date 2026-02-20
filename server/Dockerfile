@@ -3,20 +3,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
 
-# Install dependencies
 RUN npm ci --prefer-offline --no-audit --legacy-peer-deps
 
-# Copy application code
 COPY . .
 
-# Initialize the database during build
-RUN npm run init-db
+# Only initialize DB if CSV file exists, otherwise skip (DB will be empty or use existing data)
+RUN npm run init-db || echo "CSV file not found, skipping DB initialization"
 
-# Expose the port
 EXPOSE 5002
 
-# Start the server
 CMD ["npm", "start"]

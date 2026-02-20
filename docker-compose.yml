@@ -13,6 +13,7 @@ services:
       NODE_ENV: ${NODE_ENV}
     volumes:
     - backend-data:/app/data
+    - ./server/public:/app/public:ro
   frontend:
     build:
       context: .
