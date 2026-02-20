@@ -5,22 +5,19 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-    - 5002:5002
+    - 5004:5004
     networks:
     - app-network
     environment:
       PORT: ${PORT}
       NODE_ENV: ${NODE_ENV}
-    volumes:
-    - backend-data:/app/data
-    - ./server/public:/app/public:ro
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-    - 8083:80
+    - 8084:80
     networks:
     - app-network
     environment:
@@ -31,6 +28,3 @@ services:
 networks:
   app-network:
     driver: bridge
-volumes:
-  backend-data:
-    driver: local
