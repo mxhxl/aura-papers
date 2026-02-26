@@ -1,8 +1,8 @@
 services:
   backend:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server/Dockerfile
     restart: unless-stopped
     ports:
     - 5004:5004
@@ -11,8 +11,6 @@ services:
     environment:
       PORT: ${PORT}
       NODE_ENV: ${NODE_ENV}
-    volumes:
-    - ./public/retraction_watch.csv:/app/public/retraction_watch.csv:ro
   frontend:
     build:
       context: .
