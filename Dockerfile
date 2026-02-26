@@ -17,7 +17,9 @@ COPY . .
 
 RUN npm run build
 
-RUN find dist -type f -name '*.js' -exec sed -i 's|http://127\.0\.0\.1:[0-9]*/api|/api|g; s|http://localhost:[0-9]*/api|/api|g; s|http://127\.0\.0\.1:[0-9]*/|/|g; s|http://localhost:[0-9]*/|/|g' {} + 2>/dev/null || true
+
+# Rewrite hardcoded localhost API URLs to relative paths for Docker Compose proxy
+RUN find . -type f -name '*.js' -exec sed -i 's|http://127\.0\.0\.1:[0-9]*/api|/api|g; s|http://localhost:[0-9]*/api|/api|g; s|http://127\.0\.0\.1:[0-9]*/|/|g; s|http://localhost:[0-9]*/|/|g' {} + 2>/dev/null || true
 
 FROM nginx:1.25-alpine
 

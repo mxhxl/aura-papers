@@ -19,7 +19,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-    - 8085:80
+    - 8086:80
     networks:
     - app-network
     environment:

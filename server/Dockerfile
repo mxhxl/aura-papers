@@ -11,8 +11,10 @@ RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline --no-audit
 
 COPY . .
 
+RUN node init-db.js || true
+
 ENV NODE_ENV=production
 
 EXPOSE 5004
 
-CMD ["sh", "-c", "node init-db.js && node server.js"]
+CMD ["node", "server.js"]
